@@ -46,15 +46,15 @@ autoUpdater.allowDowngrade = false
 // Determine if running in development
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
-// API URL configuration - uses Azure Container Apps in production
+// API URL configuration - uses Google Cloud Run in production
 const API_URL = process.env.FORSETI_API_URL || (isDev
   ? 'http://localhost:4000'
-  : 'https://forseti-api.icyfield-da5f7469.uksouth.azurecontainerapps.io')
+  : 'https://forseti-api-173360556184.us-central1.run.app')
 
-// Web app URL - uses Azure Container Apps in production
+// Web app URL - uses Google Cloud Run in production
 const WEB_APP_URL = process.env.FORSETI_WEB_URL || (isDev
   ? 'http://localhost:3000'
-  : 'https://forseti-web.icyfield-da5f7469.uksouth.azurecontainerapps.io')
+  : 'https://forseti-web-173360556184.us-central1.run.app')
 
 // electron-store is ESM-only, use dynamic import
 let store = null

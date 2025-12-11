@@ -117,7 +117,11 @@
       "Bash(gcloud logging read:*)",
       "Bash(gcloud run services update:*)",
       "Bash(git add:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial deployment to Google Cloud Run\n\n- Deploy API and Web services to Cloud Run\n- Set up Cloud SQL PostgreSQL database\n- Configure Artifact Registry for Docker images\n- Add cloudbuild.yaml for CI/CD\n- Fix OAuth flow and account linking\n- Add Suspense boundaries for Next.js 15 compatibility\n- Update Dockerfiles for Cloud Run environment\n\nServices deployed:\n- API: https://forseti-api-173360556184.us-central1.run.app\n- Web: https://forseti-web-173360556184.us-central1.run.app\nEOF\n)\")",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
