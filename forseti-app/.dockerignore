@@ -1,0 +1,88 @@
+# =============================================================================
+# Forseti Docker Ignore File
+# =============================================================================
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+**/.next
+dist
+**/dist
+.turbo
+**/.turbo
+
+# Environment files (provided at runtime)
+.env
+.env.*
+!.env.docker.example
+
+# Development files
+*.log
+npm-debug.log*
+.git
+**/.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+coverage
+**/*.test.js
+**/*.spec.js
+
+# Documentation (except essential)
+*.md
+!README.md
+
+# Electron app (not containerized)
+apps/electron
+
+# SQLite dev database
+*.db
+prisma/dev.db
+apps/api/prisma/dev.db
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+
+# Utility scripts not needed in containers
+apps/api/check-*.js
+apps/api/list-*.js
+apps/api/set-*.js
+apps/api/update-*.js
+apps/api/seed-*.js
+apps/api/import-*.js
+apps/api/analyze-*.js
+apps/api/activities.json
+apps/api/*.backup
+
+# Deployment artifacts
+**/*.zip
+**/deploy-temp
+
+# Mobile app (separate project)
+../forseti-mobile
+
+# iRacing bridge (Windows-only, not containerized)
+../forseti-iracing-bridge
+
+# Figma designs
+../Figma Design
+
+# Batch scripts
+*.bat
+*.ps1

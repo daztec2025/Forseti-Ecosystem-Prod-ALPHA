@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment files (keep examples)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+python-embed/
+
+# Electron build artifacts
+forseti-app/apps/electron/dist/
+*.exe
+*.dmg
+*.AppImage
+
+# Docker
+*.tar
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database
+*.db
+*.sqlite
+
+# Uploads (keep directory structure)
+forseti-app/apps/api/uploads/*
+!forseti-app/apps/api/uploads/.gitkeep
+
+# Prisma
+forseti-app/apps/api/prisma/*.db
+forseti-app/apps/api/prisma/*.db-journal
+
+# Turbo
+.turbo/
+
+# Mobile
+forseti-mobile/node_modules/
+forseti-mobile/.expo/
+forseti-mobile/android/
+forseti-mobile/ios/

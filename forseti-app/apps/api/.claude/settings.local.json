@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(tail:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(az webapp show:*)",
+      "Bash(az webapp config appsettings list:*)",
+      "Bash(az webapp log tail:*)",
+      "Bash(az webapp log:*)",
+      "Bash(unzip:*)",
+      "Bash(curl:*)",
+      "Bash(az postgres flexible-server show:*)",
+      "Bash(az webapp update:*)",
+      "Bash(node -c:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,257 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  username         String   @unique
+  password         String?  // Nullable for OAuth-only users
+  name             String
+  avatar           String?
+  bio              String?
+  isPro            Boolean  @default(false)
+  isFoundingDriver Boolean  @default(false)
+  membershipTier   String   @default("member") // member, apex, analyst
+  engagementLevel  String   @default("bronze") // bronze, silver, gold, platinum
+  engagementPoints Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  activities    Activity[]
+  followedBy    Follow[]        @relation("following")
+  following     Follow[]        @relation("follower")
+  notifications Notification[]
+  comments      Comment[]
+  likes         Like[]
+  analystNotes  AnalystNote[]
+  subscriptions DriverSubscription[] @relation("subscriber")
+  subscribers   DriverSubscription[] @relation("driver")
+  drills        Drill[]
+  oauthAccounts OAuthAccount[]
+}
+
+model OAuthAccount {
+  id                String   @id @default(uuid())
+  userId            String
+  provider          String   // "discord" | "google"
+  providerAccountId String
+  email             String?
+  accessToken       String?
+  refreshToken      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@index([email])
+}
+
+model Activity {
+  id            String   @id @default(uuid())
+  userId        String
+  game          String
+  duration      Int
+  performance   String
+  date          DateTime
+  car           String?
+  fastestLap    String?
+  track         String?
+  description      String?
+  isPrivate        Boolean  @default(false)
+  trackTemperature Float?
+  airTemperature   Float?
+  trackCondition   String?
+  setupFilename    String?
+  setupPath        String?
+  createdAt        DateTime @default(now())
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments        Comment[]
+  likes           Like[]
+  telemetry       TelemetryData?
+  telemetryPoints TelemetryPoint[]
+  analystNotes    AnalystNote[]
+  media           ActivityMedia[]
+
+  @@index([userId])
+  @@index([date])
+  @@index([track])
+  @@index([game])
+}
+
+model ActivityMedia {
+  id         String   @id @default(uuid())
+  activityId String
+  type       String   // "image" | "video"
+  filename   String
+  mimeType   String
+  size       Int
+  duration   Int?     // video duration in seconds (null for images)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model DriverSubscription {
+  id           String   @id @default(uuid())
+  subscriberId String
+  driverId     String
+  status       String   @default("active") // active, cancelled, expired
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subscriber User @relation("subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  driver     User @relation("driver", fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, driverId])
+  @@index([subscriberId])
+  @@index([driverId])
+}
+
+model Notification {
+  id           String   @id @default(uuid())
+  userId       String
+  type         String
+  message      String
+  fromUserId   String?
+  fromUserName String?
+  activityId   String?
+  read         Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+model Comment {
+  id             String   @id @default(uuid())
+  activityId     String
+  userId         String
+  text           String
+  mentionedUsers String?  // JSON array of mentioned user IDs
+  createdAt      DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes    Like[]
+
+  @@index([activityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Like {
+  id         String   @id @default(uuid())
+  userId     String
+  activityId String?
+  commentId  String?
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity Activity? @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  comment  Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, activityId])
+  @@unique([userId, commentId])
+}
+
+model TelemetryData {
+  id          String   @id @default(uuid())
+  activityId  String   @unique
+  sessionData String   // JSON string containing full session telemetry
+  lapData     String   // JSON string containing lap-by-lap telemetry
+  referenceLap String? // JSON string containing reference lap data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+// Per-point telemetry storage for Analyst access. Each CSV row will be
+// stored as a JSON blob in `data` with optional time and pointIndex for
+// efficient querying. This model is intentionally minimal so it can handle
+// arbitrary CSV column shapes while still allowing SQL queries by activity.
+model TelemetryPoint {
+  id         String   @id @default(uuid())
+  activityId String
+  pointIndex Int?
+  timeMs     Int?
+  data       String   // JSON string for the raw telemetry row
+  createdAt  DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+}
+
+// Notes that drivers can add to their analyst sessions for personal reference
+model AnalystNote {
+  id         String   @id @default(uuid())
+  activityId String
+  userId     String
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+  @@index([userId])
+}
+
+// Drill sessions for coaching challenges
+model Drill {
+  id              String    @id @default(uuid())
+  userId          String
+  type            String    // 'consistency_run', 'pb_quali', 'target_lap'
+  trackId         String?   // Optional - filled when iRacing connects
+  carId           String?   // Optional - filled when iRacing connects
+  targetTime      Float?    // Target total time in seconds (from historical best) - calculated on activation
+  targetLaps      Int       // Number of laps (e.g., 5 for consistency run)
+  xpReward        Int       // Base XP reward for completion
+  status          String    @default("pending") // pending, active, completed, abandoned
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  // Results (filled when completed)
+  actualTime      Float?    // Actual total time achieved
+  delta           Float?    // Difference from target (negative = beat target)
+  lapsCompleted   Int       @default(0)
+  xpEarned        Int?      // Actual XP earned (base + bonus)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+}

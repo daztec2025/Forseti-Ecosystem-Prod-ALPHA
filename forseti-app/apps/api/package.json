@@ -1,0 +1,42 @@
+{
+  "name": "forseti-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "prisma:init": "prisma init --datasource-provider sqlite",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "postinstall": "prisma generate"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Forseti API Server",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@prisma/client": "^6.16.3",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "passport": "^0.7.0",
+    "passport-discord-auth": "^1.0.4",
+    "passport-google-oauth20": "^2.0.0",
+    "pg": "^8.16.3",
+    "prisma": "^6.16.3",
+    "validator": "^13.12.0"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^12.4.6"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,88 @@
+# =============================================================================
+# Forseti Ecosystem - Development Docker Compose Configuration
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Features:
+#   - All ports exposed for direct access
+#   - Source code mounted for hot-reload
+#   - Adminer database GUI
+#   - Development environment settings
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database - Exposed for local tools
+  # ---------------------------------------------------------------------------
+  db:
+    ports:
+      - "5432:5432"
+
+  # ---------------------------------------------------------------------------
+  # API Service - Development mode with hot-reload
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      target: deps
+    ports:
+      - "4000:4000"
+    volumes:
+      # Mount source code for hot-reload
+      - ./apps/api/index.js:/app/apps/api/index.js:ro
+      - ./apps/api/config.js:/app/apps/api/config.js:ro
+      - ./apps/api/prisma:/app/apps/api/prisma
+      - ./apps/api/services:/app/apps/api/services:ro
+      - ./apps/api/routes:/app/apps/api/routes:ro
+      - api_uploads:/app/apps/api/uploads
+    environment:
+      NODE_ENV: development
+    working_dir: /app/apps/api
+    command: ["node", "--watch", "index.js"]
+
+  # ---------------------------------------------------------------------------
+  # Web Service - Development mode with hot-reload
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+      target: deps
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount entire web app for hot-reload (Next.js needs all config files)
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
+      # Prevent node_modules from being overwritten by mount
+      - /app/apps/web/node_modules
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    working_dir: /app/apps/web
+    command: ["npm", "run", "dev"]
+    # Override depends_on to not require healthcheck in development
+    depends_on:
+      - api
+
+  # ---------------------------------------------------------------------------
+  # Adminer - Database management GUI
+  # ---------------------------------------------------------------------------
+  adminer:
+    image: adminer:latest
+    container_name: forseti-adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+      ADMINER_DESIGN: nette
+    depends_on:
+      - db
+    networks:
+      - forseti-network

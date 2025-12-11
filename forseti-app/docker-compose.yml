@@ -1,0 +1,89 @@
+# =============================================================================
+# Forseti Ecosystem - Docker Compose Base Configuration
+# This file contains common service definitions
+# Override with docker-compose.dev.yml or docker-compose.prod.yml
+#
+# Usage:
+#   Development: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: forseti-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-forseti}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forseti_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-forseti}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-forseti} -d ${POSTGRES_DB:-forseti}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - forseti-network
+
+  # ---------------------------------------------------------------------------
+  # API Service (Express.js)
+  # ---------------------------------------------------------------------------
+  api:
+    container_name: forseti-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-forseti}:${POSTGRES_PASSWORD:-forseti_dev_password}@db:5432/${POSTGRES_DB:-forseti}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-forseti-dev-secret-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      JWT_EXPIRES_IN_REMEMBER_ME: ${JWT_EXPIRES_IN_REMEMBER_ME:-30d}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080,http://web:8080}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-10}
+      # OAuth Configuration
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      API_URL: ${API_URL:-http://localhost:4000}
+      # AI Race Engineer (Claude API)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - api_uploads:/app/apps/api/uploads
+    networks:
+      - forseti-network
+
+  # ---------------------------------------------------------------------------
+  # Web Service (Next.js)
+  # ---------------------------------------------------------------------------
+  web:
+    container_name: forseti-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 8080
+    networks:
+      - forseti-network
+
+volumes:
+  postgres_data:
+    driver: local
+  api_uploads:
+    driver: local
+
+networks:
+  forseti-network:
+    driver: bridge

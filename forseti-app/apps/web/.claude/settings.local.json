@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(az account show:*)",
+      "Bash(az webapp show:*)",
+      "Bash(az webapp restart:*)",
+      "Bash(az webapp log tail:*)",
+      "Bash(az webapp config appsettings list:*)",
+      "Bash(curl:*)",
+      "Bash(az webapp config show:*)",
+      "Bash(az webapp log:*)",
+      "Bash(az webapp deployment:*)",
+      "Bash(az webapp config appsettings set:*)",
+      "Bash(az webapp stop:*)",
+      "Bash(az webapp start:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(python3:*)",
+      "Bash(npm run build:*)",
+      "Bash(node:*)",
+      "Bash(docker --version:*)",
+      "Bash(docker build:*)",
+      "Bash(docker info:*)",
+      "Bash(docker run:*)",
+      "Bash(docker logs:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

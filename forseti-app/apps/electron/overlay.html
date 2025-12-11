@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forseti Overlay</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      user-select: none;
+      -webkit-app-region: no-drag;
+      overflow: hidden;
+      /* Prevent any text selection or rendering artifacts */
+      -webkit-user-select: none;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .overlay-container {
+      width: 350px;
+      background: rgba(10, 10, 10, 0.92);
+      border-radius: 12px;
+      padding: 16px;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      /* Ensure overlay content is rendered on its own layer */
+      will-change: transform;
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+    }
+
+    .overlay-main {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .controls-section {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .control-button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      pointer-events: auto;
+    }
+
+    .control-button.start {
+      background: #B7FF00;
+      color: #0A0A0A;
+    }
+
+    .control-button.start:hover {
+      background: #A3E600;
+      transform: translateY(-1px);
+    }
+
+    .control-button.stop {
+      background: #FF4444;
+      color: #FFFFFF;
+    }
+
+    .control-button.stop:hover {
+      background: #DD3333;
+      transform: translateY(-1px);
+    }
+
+    .control-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .telemetry-section {
+      flex: 1;
+    }
+
+    .logo-container {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      opacity: 0.9;
+    }
+
+    .recording-indicator {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #666666;
+      transition: all 0.3s ease;
+    }
+
+    .recording-indicator.recording {
+      background: #00FF00;
+      box-shadow: 0 0 12px rgba(0, 255, 0, 0.6);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .recording-indicator.idle {
+      background: #FF0000;
+    }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .telemetry-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .telemetry-label {
+      font-size: 9px;
+      color: #666666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .telemetry-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #FFFFFF;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .telemetry-value.highlight {
+      color: #B7FF00;
+    }
+
+    .telemetry-unit {
+      font-size: 11px;
+      color: #888888;
+      margin-left: 4px;
+      font-weight: 400;
+    }
+
+    .recording-indicator {
+      width: 8px;
+      height: 8px;
+      background: #B7FF00;
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.5;
+        transform: scale(0.9);
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Drill display styles */
+    .drill-section {
+      display: none;
+      background: rgba(183, 255, 0, 0.1);
+      border: 1px solid rgba(183, 255, 0, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 4px;
+    }
+
+    .drill-section.active {
+      display: block;
+    }
+
+    .drill-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .drill-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #B7FF00;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .drill-progress-text {
+      font-size: 10px;
+      color: #888888;
+    }
+
+    .drill-stats {
+      display: flex;
+      gap: 16px;
+    }
+
+    .drill-stat {
+      flex: 1;
+    }
+
+    .drill-stat-label {
+      font-size: 8px;
+      color: #666666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .drill-stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .drill-stat-value.delta {
+      color: #FFFFFF;
+    }
+
+    .drill-stat-value.delta.ahead {
+      color: #00FF00;
+    }
+
+    .drill-stat-value.delta.behind {
+      color: #FF4444;
+    }
+
+    .drill-stat-value.target {
+      color: #888888;
+    }
+
+    /* Pending drill styles */
+    .drill-pending-message {
+      display: none;
+      text-align: center;
+      padding: 8px;
+      font-size: 11px;
+      color: #FFD700;
+    }
+
+    .drill-section.pending .drill-stats {
+      display: none;
+    }
+
+    .drill-section.pending .drill-pending-message {
+      display: block;
+    }
+
+    .drill-section.pending {
+      border-color: rgba(255, 215, 0, 0.3);
+      background: rgba(255, 215, 0, 0.1);
+    }
+
+    .drill-section.pending .drill-name {
+      color: #FFD700;
+    }
+
+    /* Drill completion overlay */
+    .drill-complete-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      border-radius: 12px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      z-index: 100;
+    }
+
+    .drill-complete-overlay.show {
+      display: flex;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    .drill-complete-result {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .drill-complete-result.success {
+      color: #00FF00;
+    }
+
+    .drill-complete-result.fail {
+      color: #FF4444;
+    }
+
+    .drill-complete-delta {
+      font-size: 14px;
+      color: #888888;
+    }
+
+    .drill-complete-xp {
+      font-size: 18px;
+      font-weight: 600;
+      color: #B7FF00;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-container fade-in" id="overlay">
+    <div class="overlay-main">
+      <div class="telemetry-section">
+        <div class="telemetry-grid" id="telemetryGrid">
+          <div class="telemetry-item">
+            <div class="telemetry-label">Speed</div>
+            <div class="telemetry-value">
+              <span id="speed">0</span><span class="telemetry-unit">mph</span>
+            </div>
+          </div>
+
+          <div class="telemetry-item">
+            <div class="telemetry-label">Current Lap</div>
+            <div class="telemetry-value">
+              <span id="currentLap">00:00.000</span>
+            </div>
+          </div>
+
+          <div class="telemetry-item">
+            <div class="telemetry-label">Fastest Lap</div>
+            <div class="telemetry-value highlight">
+              <span id="fastestLap">--:--:---</span>
+            </div>
+          </div>
+
+          <div class="telemetry-item">
+            <div class="telemetry-label">Session Time</div>
+            <div class="telemetry-value">
+              <span id="sessionTime">00:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-container">
+        <img src="forseti-logo.png" alt="Forseti" class="logo" id="logoImage">
+        <div class="recording-indicator idle" id="recordingIndicator"></div>
+      </div>
+    </div>
+
+    <div class="controls-section">
+      <button class="control-button start" id="startButton">Start Recording</button>
+      <button class="control-button stop" id="stopButton" style="display: none;">Stop Recording</button>
+    </div>
+
+    <!-- Drill tracking section -->
+    <div class="drill-section" id="drillSection">
+      <div class="drill-header">
+        <span class="drill-name" id="drillName">Consistency Run</span>
+        <span class="drill-progress-text" id="drillProgress">Lap 0/5</span>
+      </div>
+      <div class="drill-stats">
+        <div class="drill-stat">
+          <div class="drill-stat-label">Delta</div>
+          <div class="drill-stat-value delta" id="drillDelta">+0.000</div>
+        </div>
+        <div class="drill-stat">
+          <div class="drill-stat-label">Target</div>
+          <div class="drill-stat-value target" id="drillTarget">0:00.000</div>
+        </div>
+      </div>
+      <div class="drill-pending-message" id="drillPendingMessage">
+        Waiting for session data...
+      </div>
+    </div>
+
+    <!-- Drill completion overlay -->
+    <div class="drill-complete-overlay" id="drillCompleteOverlay">
+      <div class="drill-complete-result" id="drillCompleteResult">DRILL COMPLETE</div>
+      <div class="drill-complete-delta" id="drillCompleteDelta">-2.341s faster</div>
+      <div class="drill-complete-xp" id="drillCompleteXP">+75 XP</div>
+    </div>
+  </div>
+
+  <script>
+    // Disable console logs to prevent flickering text overlay
+    if (typeof console !== 'undefined') {
+      console.log = function() {};
+      console.warn = function() {};
+      console.error = function() {};
+      console.debug = function() {};
+      console.info = function() {};
+    }
+
+    const recordingIndicator = document.getElementById('recordingIndicator');
+    const speedElement = document.getElementById('speed');
+    const currentLapElement = document.getElementById('currentLap');
+    const fastestLapElement = document.getElementById('fastestLap');
+    const sessionTimeElement = document.getElementById('sessionTime');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+
+    let sessionStartTime = null;
+
+    // Button click handlers
+    startButton.addEventListener('click', () => {
+      window.electronAPI.startRecording();
+    });
+
+    stopButton.addEventListener('click', () => {
+      window.electronAPI.stopRecording();
+    });
+
+    // Make buttons area interactive
+    const overlayContainer = document.getElementById('overlay');
+    overlayContainer.addEventListener('mouseenter', () => {
+      // Tell main process to make window clickable
+      if (window.electronAPI.setClickable) {
+        window.electronAPI.setClickable(true);
+      }
+    });
+
+    overlayContainer.addEventListener('mouseleave', () => {
+      // Tell main process to make window click-through again
+      if (window.electronAPI.setClickable) {
+        window.electronAPI.setClickable(false);
+      }
+    });
+
+    // Convert seconds to MM:SS.mmm format
+    function formatLapTime(seconds) {
+      if (seconds === 0) return '00:00.000';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      const ms = Math.floor((seconds % 1) * 1000);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+    }
+
+    // Convert seconds to MM:SS format
+    function formatSessionTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Update session timer
+    function updateSessionTimer() {
+      if (sessionStartTime) {
+        const elapsed = (Date.now() - sessionStartTime) / 1000;
+        sessionTimeElement.textContent = formatSessionTime(elapsed);
+      }
+    }
+
+    // Listen for recording status updates
+    window.electronAPI.onRecordingStatus((recordingStatus) => {
+      if (recordingStatus.isRecording) {
+        recordingIndicator.classList.remove('idle');
+        recordingIndicator.classList.add('recording');
+        startButton.style.display = 'none';
+        stopButton.style.display = 'block';
+
+        if (!sessionStartTime) {
+          sessionStartTime = Date.now();
+          setInterval(updateSessionTimer, 1000);
+        }
+      } else {
+        recordingIndicator.classList.remove('recording');
+        recordingIndicator.classList.add('idle');
+        startButton.style.display = 'block';
+        stopButton.style.display = 'none';
+        sessionStartTime = null;
+
+        // Reset values
+        speedElement.textContent = '0';
+        currentLapElement.textContent = '00:00.000';
+        fastestLapElement.textContent = '--:--:---';
+        sessionTimeElement.textContent = '00:00';
+      }
+    });
+
+    // Listen for telemetry updates
+    window.electronAPI.onTelemetryUpdate((telemetry) => {
+      // Update speed (convert m/s to mph)
+      const speedMph = Math.round(telemetry.speed * 2.237);
+      speedElement.textContent = speedMph;
+
+      // Update current lap time
+      if (telemetry.lapTime) {
+        currentLapElement.textContent = formatLapTime(telemetry.lapTime);
+      }
+
+      // Update fastest lap
+      if (telemetry.fastestLapTime) {
+        fastestLapElement.textContent = formatLapTime(telemetry.fastestLapTime);
+      }
+    });
+
+    // Drill UI elements
+    const drillSection = document.getElementById('drillSection');
+    const drillName = document.getElementById('drillName');
+    const drillProgress = document.getElementById('drillProgress');
+    const drillDelta = document.getElementById('drillDelta');
+    const drillTarget = document.getElementById('drillTarget');
+    const drillCompleteOverlay = document.getElementById('drillCompleteOverlay');
+    const drillCompleteResult = document.getElementById('drillCompleteResult');
+    const drillCompleteDelta = document.getElementById('drillCompleteDelta');
+    const drillCompleteXP = document.getElementById('drillCompleteXP');
+
+    // Drill type display names
+    const drillTypeNames = {
+      'consistency_run': 'Consistency Run',
+      'pb_quali': 'PB Quali Run',
+      'target_lap': 'Target Lap Time'
+    };
+
+    // Format total time for drill display (M:SS.mmm)
+    function formatTotalTime(seconds) {
+      if (!seconds || seconds === 0) return '0:00.000';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      const ms = Math.floor((seconds % 1) * 1000);
+      return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+    }
+
+    // Listen for drill updates
+    window.electronAPI.onDrillUpdate((data) => {
+      if (data.active) {
+        drillSection.classList.add('active');
+        drillName.textContent = drillTypeNames[data.type] || data.type;
+
+        // Handle pending vs active drill
+        if (data.pending) {
+          drillSection.classList.add('pending');
+          drillProgress.textContent = 'Pending';
+        } else {
+          drillSection.classList.remove('pending');
+          drillProgress.textContent = `Lap ${data.lapsCompleted}/${data.targetLaps}`;
+          drillTarget.textContent = formatTotalTime(data.targetTime);
+
+          // Update delta with color coding
+          const deltaValue = data.delta || 0;
+          const sign = deltaValue >= 0 ? '+' : '';
+          drillDelta.textContent = `${sign}${deltaValue.toFixed(3)}`;
+          drillDelta.classList.remove('ahead', 'behind');
+          if (deltaValue < 0) {
+            drillDelta.classList.add('ahead');
+          } else if (deltaValue > 0) {
+            drillDelta.classList.add('behind');
+          }
+        }
+      } else {
+        drillSection.classList.remove('active');
+        drillSection.classList.remove('pending');
+      }
+    });
+
+    // Listen for drill completion
+    window.electronAPI.onDrillComplete((data) => {
+      drillCompleteOverlay.classList.add('show');
+
+      if (data.beatTarget) {
+        drillCompleteResult.textContent = 'TARGET BEAT!';
+        drillCompleteResult.classList.remove('fail');
+        drillCompleteResult.classList.add('success');
+        drillCompleteDelta.textContent = `${Math.abs(data.delta).toFixed(3)}s faster`;
+      } else {
+        drillCompleteResult.textContent = 'DRILL COMPLETE';
+        drillCompleteResult.classList.remove('success');
+        drillCompleteResult.classList.add('fail');
+        drillCompleteDelta.textContent = `${data.delta.toFixed(3)}s slower`;
+      }
+
+      // XP will be calculated by the main window after API call
+      drillCompleteXP.textContent = 'Calculating XP...';
+
+      // Hide drill section
+      drillSection.classList.remove('active');
+
+      // Auto-hide completion overlay after 5 seconds
+      setTimeout(() => {
+        drillCompleteOverlay.classList.remove('show');
+      }, 5000);
+    });
+  </script>
+</body>
+</html>

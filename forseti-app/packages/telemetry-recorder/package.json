@@ -1,0 +1,18 @@
+{
+  "name": "@repo/telemetry-recorder",
+  "version": "1.0.0",
+  "description": "Telemetry recording for sim racing games",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "node-irsdk": "^2.1.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

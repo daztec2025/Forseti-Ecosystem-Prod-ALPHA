@@ -1,0 +1,41 @@
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Generated Prisma client
+/generated/prisma
+
+# Database files
+*.db
+prisma/dev.db
+
+# Deployment artifacts
+api-deploy.zip
+create-deploy.ps1
+deploy-temp/
+
+# Utility/development scripts (not needed in production)
+update-passwords.js
+delete-demo-activities.js
+seed-jordan-activities.js
+check-*.js
+list-users.js
+set-*.js
+import-from-old-db.js
+get-activity-endpoint.js
+analyze-silverstone-sectors.js
+update-deren-password.js
+update-points.js
+activities.json
+
+# Backup files
+*.backup
+
+# Uploads (media stored locally in dev)
+uploads/
+
+# Turbo cache
+.turbo/
